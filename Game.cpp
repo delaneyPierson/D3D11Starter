@@ -1,4 +1,4 @@
-#include "Game.h"
+﻿#include "Game.h"
 #include "Graphics.h"
 #include "Vertex.h"
 #include "Input.h"
@@ -19,6 +19,11 @@
 
 // For the DirectX Math library
 using namespace DirectX;
+
+// Variables for UI
+int number = 0;
+XMFLOAT4 color(1.0f, 0.0f, 0.5f, 1.0f);
+bool isVisable = true;
 
 // --------------------------------------------------------
 // Called once per program, after the window and graphics API
@@ -259,6 +264,7 @@ void Game::OnResize()
 void Game::Update(float deltaTime, float totalTime)
 {
 	UpdateUI(deltaTime);
+	BuildUI();
 	// Example input checking: Quit if the escape key is pressed
 	if (Input::KeyDown(VK_ESCAPE))
 		Window::Quit();
@@ -275,8 +281,8 @@ void Game::Draw(float deltaTime, float totalTime)
 	// - At the beginning of Game::Draw() before drawing *anything*
 	{
 		// Clear the back buffer (erase what's on screen) and depth buffer
-		const float color[4] = { 0.4f, 0.6f, 0.75f, 0.0f };
-		Graphics::Context->ClearRenderTargetView(Graphics::BackBufferRTV.Get(),	color);
+		float colorValues[4] = { color.x, color.y, color.z, color.w };
+		Graphics::Context->ClearRenderTargetView(Graphics::BackBufferRTV.Get(),	colorValues);
 		Graphics::Context->ClearDepthStencilView(Graphics::DepthBufferDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 	}
 
@@ -310,7 +316,7 @@ void Game::Draw(float deltaTime, float totalTime)
 	// - These should happen exactly ONCE PER FRAME
 	// - At the very end of the frame (after drawing *everything*)
 	{
-		ImGui::Render(); // Turns this frame�s UI into renderable triangles
+		ImGui::Render(); // Turns this frame’s UI into renderable triangles
 		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData()); // Draws it to the screen
 
 		// Present at the end of the frame
@@ -347,10 +353,76 @@ void Game::UpdateUI(float deltaTime)
 	// Determine new input capture
 	Input::SetKeyboardCapture(io.WantCaptureKeyboard);
 	Input::SetMouseCapture(io.WantCaptureMouse);
-
-	// Show the demo window
-	ImGui::ShowDemoWindow();
+	if (isVisable)
+	{
+		// Show the demo window
+		ImGui::ShowDemoWindow();
+	}
 }
 
+// --------------------------------------------------------
+// Helper method to build the UI in Update
+// --------------------------------------------------------
+void Game::BuildUI()
+{
+	/*
+	X A custom window (named something other than Debug)
+	X The current Framerate, which can be retrieved with ImGui::GetIO().Framerate
+	X The window dimensions, from the Window’s Width() and Height() functions
+	X A color picker for background color using ImGui::ColorEdit4()
+	X Currently, the color of the window is defined by a local variable in Game::Draw()
+	X Devise a way to store that value between frames and edit it with the UI
+	X Hint: The data type can remain a 4-element array of floats, but it can’t be const anymore
+	X A button that will hide or show the ImGui demo window when clicked
+	X Hint: You’ll need to track its visibility yourself and conditionally call ShowDemoWindow()
+	X Several other elements of your choosing for testing (which may be removed in the future)
+	*/
+	
+	ImGui::Begin("Delaney's Epic UI :)");
+	ImGui::Text("Hi hi Welcome!!! :0");
+	ImGui::StyleColorsClassic();
+
+	// Displays framerate to UI
+	ImGui::Text("Framerate: %f fps", ImGui::GetIO().Framerate);
+
+	// Displays W X H to UI
+	ImGui::Text("Window Resolution: %dx%d", Window::Width(), Window::Height());
+
+	// Toggles visability of Demo on click
+	if (ImGui::Button("Toggle ImGui Demo"))
+	{
+		isVisable = !isVisable;
+	}
+
+	// Color editor for the background
+	ImGui::ColorEdit4("Background Color", &color.x);
+
+	// Adds smilies when clicked
+	if (ImGui::Button("+1 Smiley"))
+	{
+		number++;
+	}
+
+	// Minuses smilies when clicked
+	if (ImGui::Button("-1 Smiley"))
+	{
+		number--; 
+	}
+
+	// A slider to increase the number of smileys
+	ImGui::SliderInt("How many Smileys?", &number, 0, 100);
+
+	// Playing with colored text
+	ImGui::TextColored(ImVec4(color.x, color.y, color.z, color.w), "Your Smiley Garden");
+	
+	// Creates a child section which is scrollable within the larger UI
+	ImGui::BeginChild("Smiley Garden");
+	for (int n = 0; n < number; n++)
+		ImGui::Text("%4d: :)", n);
+	ImGui::EndChild();
+
+	ImGui::End();
+
+}
 
 
