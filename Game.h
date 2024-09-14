@@ -2,6 +2,9 @@
 
 #include <d3d11.h>
 #include <wrl/client.h>
+#include "Mesh.h"
+#include <memory>
+#include <vector>
 
 class Game
 {
@@ -39,5 +42,8 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader;
 	Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader;
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout;
+
+	std::vector<std::shared_ptr<Mesh>> meshes;
+
 };
 
