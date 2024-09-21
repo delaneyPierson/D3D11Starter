@@ -6,6 +6,7 @@
 #include "Window.h"
 #include "Memory"
 #include "Mesh.h"
+#include "BufferStructs.h"
 
 #include <DirectXMath.h>
 
@@ -27,7 +28,11 @@ int number = 0;
 XMFLOAT4 color(1.0f, 0.0f, 0.5f, 1.0f);
 bool isVisable = true;
 
+// Shader color variable for UI access
 //std::unique_ptr<int> number = std::make_unique<int>(0);
+VertexShaderData vsData = {};
+//vsData.colorTint = XMFLOAT4(0.0f, 1.0f, 1.0f, 1.0f);
+//vsData.offset = XMFLOAT3(0.25f, 0.0f, 0.0f);
 
 
 // --------------------------------------------------------
@@ -72,6 +77,33 @@ void Game::Initialize()
 		//    these calls will need to happen multiple times per frame
 		Graphics::Context->VSSetShader(vertexShader.Get(), 0, 0);
 		Graphics::Context->PSSetShader(pixelShader.Get(), 0, 0);
+	}
+
+	// Create a CONSTANT BUFFER to hold data on the GPU for shaders
+	// and bind it to the first vertex shader constant buffer register
+	{
+		// Calculate the size of our struct as a multiple of 16
+		unsigned int size = sizeof(VertexShaderData);
+		size = (size + 15) / 16 * 16;
+
+		// Describe the constant buffer and create it
+		D3D11_BUFFER_DESC cbDesc = {};
+		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		cbDesc.ByteWidth = size;
+		cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		cbDesc.Usage = D3D11_USAGE_DYNAMIC;
+		cbDesc.MiscFlags = 0;
+		cbDesc.StructureByteStride = 0;
+		Graphics::Device->CreateBuffer(&cbDesc, 0, vsConstantBuffer.GetAddressOf());
+
+		// Activate the constant buffer, ensuring it is 
+		// bound to the correct slot (register)
+		//  - This should match what our shader expects!
+		//  - Your C++ and your shaders have to start matching up!
+		Graphics::Context->VSSetConstantBuffers(
+			0,		// Which slot (register) to bind the buffer to?
+			1,		// How many are we activating?  Can set more than one at a time, if we need
+			vsConstantBuffer.GetAddressOf());	// Array of constant buffers or the address of just one (same thing in C++)
 	}
 }
 
@@ -292,34 +324,20 @@ void Game::Draw(float deltaTime, float totalTime)
 	// - These steps are generally repeated for EACH object you draw
 	// - Other Direct3D calls will also be necessary to do more complex things
 	{
-		// Set buffers in the input assembler (IA) stage
-		//  - Do this ONCE PER OBJECT, since each object may have different geometry
-		//  - For this demo, this step *could* simply be done once during Init()
-		//  - However, this needs to be done between EACH DrawIndexed() call
-		//     when drawing different geometry, so it's here as an example
-		UINT stride = sizeof(Vertex);
-		UINT offset = 0;
-		Graphics::Context->IASetVertexBuffers(0, 1, vertexBuffer.GetAddressOf(), &stride, &offset);
-		Graphics::Context->IASetIndexBuffer(indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-
-		// Tell Direct3D to draw
-		//  - Begins the rendering pipeline on the GPU
-		//  - Do this ONCE PER OBJECT you intend to draw
-		//  - This will use all currently set Direct3D resources (shaders, buffers, etc)
-		//  - DrawIndexed() uses the currently set INDEX BUFFER to look up corresponding
-		//     vertices in the currently set VERTEX BUFFER
-		Graphics::Context->DrawIndexed(
-			3,     // The number of indices to use (we could draw a subset if we wanted)
-			0,     // Offset to the first index we want to use
-			0);    // Offset to add to each index when looking up vertices
-
-
 	// DRAW geometry
 	// Loop through the game entities and draw each one
 	// - Note: A constant buffer has already been bound to
 	//   the vertex shader stage of the pipeline (see Init above)
 		for (auto& m : meshes)
 		{
+			vsData.colorTint = XMFLOAT4(1.0f, 0.20f, 0.25f, 0.50f);
+			vsData.offset = XMFLOAT3(0.75f, 0.0f, 0.00f);
+
+			D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
+			Graphics::Context->Map(vsConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);
+			memcpy(mappedBuffer.pData, &vsData, sizeof(vsData));
+			Graphics::Context->Unmap(vsConstantBuffer.Get(), 0);
+
 			m->DrawBuff();
 		}
 	}
@@ -427,6 +445,14 @@ void Game::BuildUI()
 	ImGui::Text("TOTAL Tri: %d", totalTri);
 	ImGui::Text("TOTAL Vertex: %d", totalVertex);
 
+	// RGBA sliders
+	ImGui::SliderInt("Red", &number, 0, 100);
+	ImGui::SliderInt("Green", &number, 0, 100);
+	ImGui::SliderInt("Blue", &number, 0, 100);
+	ImGui::SliderInt("Alpha", &number, 0, 100);
+
+
+
 	// Adds smilies when clicked
 	if (ImGui::Button("+1 Smiley"))
 	{
@@ -454,5 +480,3 @@ void Game::BuildUI()
 	ImGui::End();
 
 }
-
-
