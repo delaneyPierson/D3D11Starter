@@ -104,6 +104,10 @@ void Game::Initialize()
 			0,		// Which slot (register) to bind the buffer to?
 			1,		// How many are we activating?  Can set more than one at a time, if we need
 			vsConstantBuffer.GetAddressOf());	// Array of constant buffers or the address of just one (same thing in C++)
+
+		// Gives a Beginning value
+		vsData.colorTint = XMFLOAT4(1.0f, 0.20f, 0.25f, 0.50f);
+		vsData.offset = XMFLOAT3(0.75f, 0.0f, 0.0f);
 	}
 }
 
@@ -330,8 +334,8 @@ void Game::Draw(float deltaTime, float totalTime)
 	//   the vertex shader stage of the pipeline (see Init above)
 		for (auto& m : meshes)
 		{
-			vsData.colorTint = XMFLOAT4(1.0f, 0.20f, 0.25f, 0.50f);
-			vsData.offset = XMFLOAT3(0.75f, 0.0f, 0.00f);
+			//vsData.colorTint = XMFLOAT4(1.0f, 0.20f, 0.25f, 0.50f);
+			//vsData.offset = XMFLOAT3(0.75f, 0.0f, 0.00f);
 
 			D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
 			Graphics::Context->Map(vsConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);
@@ -446,11 +450,15 @@ void Game::BuildUI()
 	ImGui::Text("TOTAL Vertex: %d", totalVertex);
 
 	// RGBA sliders
-	ImGui::SliderInt("Red", &number, 0, 100);
-	ImGui::SliderInt("Green", &number, 0, 100);
-	ImGui::SliderInt("Blue", &number, 0, 100);
-	ImGui::SliderInt("Alpha", &number, 0, 100);
+	ImGui::SliderFloat("Red", &vsData.colorTint.x, 0.0f, 1.0f);
+	ImGui::SliderFloat("Green", &vsData.colorTint.y, 0.0f, 1.0f);
+	ImGui::SliderFloat("Blue", &vsData.colorTint.z, 0.0f, 1.0f);
+	ImGui::SliderFloat("Alpha", &vsData.colorTint.w, 0.0f, 1.0f);
 
+	// Offset sliders
+	ImGui::SliderFloat("X offset", &vsData.offset.x, -1.0f, 1.0f);
+	ImGui::SliderFloat("Y offset", &vsData.offset.y, -1.0f, 1.0f);
+	ImGui::SliderFloat("Z offset", &vsData.offset.z, -1.0f, 1.0f);
 
 
 	// Adds smilies when clicked
